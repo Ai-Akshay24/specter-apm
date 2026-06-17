@@ -1,9 +1,12 @@
 import { useRef, useCallback, useEffect } from 'react'
+import MetricChart from './MetricChart'
+
 const MAX_TILT      = 15      
 const SCALE_HOVER   = 1.055   
 const RESET_LERP    = 0.10    
 const RESET_EPSILON = 0.04    
 const GLARE_OPACITY = 0.12    
+
 const STATUS = {
   operational: {
     dot:    '#22c55e',
@@ -30,7 +33,9 @@ const STATUS = {
     label:  'OFF',
   },
 }
+
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+
 const fmt = {
   cpu:      (v) => ({ val: `${Math.round(v)}`,          unit: '%'  }),
   mem:      (v) => ({ val: v.toFixed(1),                unit: 'GB' }),
@@ -40,11 +45,12 @@ const fmt = {
                           ? `${(v / 1000).toFixed(1)}k`
                           : `${Math.round(v)}`,          unit: 'sess' }),
 }
+
 const metricColor = (key, value) => {
   const thresholds = {
-    cpu:     [60, 85],
-    mem:     [80, 110],
-    latency: [60, 120],
+     cpu:     [60, 85],
+     mem:     [80, 110],
+     latency: [60, 120],
   }
   if (!thresholds[key]) return '#94a3b8'
   const [warn, crit] = thresholds[key]
@@ -52,6 +58,7 @@ const metricColor = (key, value) => {
   if (value >= warn) return '#f59e0b'
   return '#22c55e'
 }
+
 function StatCell({ label, metricKey, value }) {
   if (value === undefined || value === null) return null
   const { val, unit } = fmt[metricKey]?.(value) ?? { val: '—', unit: '' }
@@ -64,9 +71,11 @@ function StatCell({ label, metricKey, value }) {
     </div>
   )
 }
+
 function TagChip({ tag }) {
   return <span style={s.tagChip}>{tag}</span>
 }
+
 export default function ServerNode({ server, metrics, isActive, onFocus }) {
   const status   = STATUS[server.status] ?? STATUS.offline
   const cardRef  = useRef(null)
@@ -74,6 +83,7 @@ export default function ServerNode({ server, metrics, isActive, onFocus }) {
   const tiltRef  = useRef({ x: 0, y: 0 })       // current rendered tilt
   const rafRef   = useRef(null)                   // reset RAF id
   const hovering = useRef(false)
+
   const handleMouseMove = useCallback((e) => {
     const card = cardRef.current
     const glare = glareRef.current
@@ -107,6 +117,7 @@ export default function ServerNode({ server, metrics, isActive, onFocus }) {
       glare.style.opacity = '1'
     }
   }, [])
+
   const handleMouseLeave = useCallback(() => {
     hovering.current = false
     const card  = cardRef.current
@@ -155,6 +166,7 @@ export default function ServerNode({ server, metrics, isActive, onFocus }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [])
+
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
     if (mq.matches) {
@@ -162,6 +174,7 @@ export default function ServerNode({ server, metrics, isActive, onFocus }) {
       if (card) card.style.transition = 'none'
     }
   }, [])
+
   return (
     <article
       ref={cardRef}
@@ -222,29 +235,8 @@ export default function ServerNode({ server, metrics, isActive, onFocus }) {
       )}
 
       {/* ── MetricChart mount point — top layer z:36 ── */}
-      {/* MetricChart.jsx mounts here; placeholder shows skeleton when no chart yet */}
       <div style={s.chartMount} aria-label="Live metric chart">
-        {/* MetricChart renders here:
-            <MetricChart serverId={server.id} metrics={metrics} />
-            Skeleton shown until MetricChart.jsx is integrated */}
-        <div style={s.chartSkeleton} aria-hidden="true">
-          {/* Simulated sparkline bars as a visual placeholder */}
-          {Array.from({ length: 24 }, (_, i) => {
-            const h = 20 + Math.sin((i / 24) * Math.PI * 3 + server.id.charCodeAt(4)) * 15
-                        + Math.cos(i * 0.8) * 8
-            return (
-              <div
-                key={i}
-                style={{
-                  ...s.skeletonBar,
-                  height:          `${Math.max(6, h)}%`,
-                  opacity:         0.18 + (i / 24) * 0.35,
-                  backgroundColor: i > 18 ? '#38bdf8' : '#1e40af',
-                }}
-              />
-            )
-          })}
-        </div>
+        <MetricChart metrics={metrics} metricKey="cpu" />
       </div>
 
       {/* ── stat footer — data layer z:28 ── */}
@@ -258,6 +250,7 @@ export default function ServerNode({ server, metrics, isActive, onFocus }) {
     </article>
   )
 }
+
 const lerp = (a, b, t) => a + (b - a) * t
 
 const s = {
@@ -267,7 +260,6 @@ const s = {
     cursor:          'pointer',
     borderRadius:    '14px',
     border:          '1px solid rgba(56,189,248,0.10)',
-    // Glass base — two-stop gradient gives a subtle top-lit feel
     background:      'linear-gradient(160deg, rgba(15,23,42,0.92) 0%, rgba(7,14,30,0.97) 100%)',
     backdropFilter:  'blur(18px) saturate(1.4)',
     WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
@@ -365,7 +357,6 @@ const s = {
     inset:        '2px',
     borderRadius: '50%',
   },
-
   statusBadge: {
     fontSize:      '9px',
     fontWeight:    700,
@@ -394,7 +385,6 @@ const s = {
     color:         '#e2e8f0',
     fontFamily:    "'Inter', ui-sans-serif, sans-serif",
     lineHeight:    1.2,
-    // subtle text-glow on the label for premium feel
     textShadow:    '0 0 20px rgba(56,189,248,0.25)',
     whiteSpace:    'nowrap',
     overflow:      'hidden',
@@ -439,20 +429,6 @@ const s = {
     transform:      'translateZ(36px)',
     position:       'relative',
     zIndex:         10,
-  },
-  chartSkeleton: {
-    display:        'flex',
-    alignItems:     'flex-end',
-    gap:            '2px',
-    padding:        '6px 6px 4px',
-    height:         '100%',
-    boxSizing:      'border-box',
-  },
-  skeletonBar: {
-    flex:           1,
-    borderRadius:   '2px 2px 0 0',
-    minWidth:       0,
-    transition:     'height 0.8s ease',
   },
   statRow: {
     display:        'flex',
@@ -499,4 +475,3 @@ const s = {
     flexShrink:     0,
   },
 }
-

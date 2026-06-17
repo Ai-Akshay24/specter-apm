@@ -51,7 +51,7 @@ export default function SpotlightCanvas({ nodes = [], radius = SPOTLIGHT_RADIUS,
         const a = nodes[i]
         const b = nodes[j]
         const dist = Math.hypot(a.x - b.x, a.y - b.y)
-        if (dist < 0.35) {
+        if (dist > 0.05 && dist < 0.58) {
           wires.push({ a, b, seed: (i * 13 + j * 7) / 100 })
         }
       }

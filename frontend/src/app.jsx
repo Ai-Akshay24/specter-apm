@@ -9,7 +9,7 @@ const MOCK_SERVERS = [
     ip:      '10.0.1.11',
     status:  'operational',   // 'operational' | 'warning' | 'critical' | 'offline'
     tags:    ['database', 'primary'],
-    topology: { x: 0.50, y: 0.22 },
+    topology: { x: 0.50, y: 0.24 },
   },
   {
     id:      'srv-002',
@@ -18,7 +18,7 @@ const MOCK_SERVERS = [
     ip:      '10.0.1.21',
     status:  'operational',
     tags:    ['app', 'api'],
-    topology: { x: 0.22, y: 0.38 },
+    topology: { x: 0.20, y: 0.32 },
   },
   {
     id:      'srv-003',
@@ -27,7 +27,7 @@ const MOCK_SERVERS = [
     ip:      '10.0.2.21',
     status:  'warning',
     tags:    ['app', 'cdn'],
-    topology: { x: 0.76, y: 0.38 },
+    topology: { x: 0.80, y: 0.32 },
   },
   {
     id:      'srv-004',
@@ -36,7 +36,7 @@ const MOCK_SERVERS = [
     ip:      '10.0.3.11',
     status:  'operational',
     tags:    ['cache', 'redis'],
-    topology: { x: 0.35, y: 0.62 },
+    topology: { x: 0.20, y: 0.68 },
   },
   {
     id:      'srv-005',
@@ -45,7 +45,7 @@ const MOCK_SERVERS = [
     ip:      '10.0.4.21',
     status:  'critical',
     tags:    ['app', 'secondary'],
-    topology: { x: 0.65, y: 0.62 },
+    topology: { x: 0.80, y: 0.68 },
   },
   {
     id:      'srv-006',
@@ -54,7 +54,7 @@ const MOCK_SERVERS = [
     ip:      '10.0.1.5',
     status:  'operational',
     tags:    ['load-balancer'],
-    topology: { x: 0.50, y: 0.48 },
+    topology: { x: 0.50, y: 0.76},
   },
 ]
 const seedMetrics = (serverId) => ({
@@ -411,8 +411,12 @@ const styles = {
     whiteSpace:    'nowrap',
   },
   stage: {
-    position: 'relative',
-    flex:     1,
+  position: 'relative',
+  width: '100%',
+  height: '100vh',
+  padding: '80px 40px 60px 260px', // Top, Right, Bottom, Left (260px accounts for your sidebar!)
+  boxSizing: 'border-box',
+  overflow: 'hidden',
   },
   nodeWrapper: {
     position: 'absolute',
