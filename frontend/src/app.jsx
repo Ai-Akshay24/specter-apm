@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react'
+import { io } from 'socket.io-client'             // 1. Bring in WebSocket client
+import useTelemetry from './hooks/useTelemetry'   // 2. Bring in your live data hook
 import SpotlightCanvas from './components/SpotlightCanvas'
 import ServerNode      from './components/ServerNode'
+const socket = io('http://localhost:4000', {
+  transports: ['websocket'],
+});
 const MOCK_SERVERS = [
   {
     id:      'srv-001',
@@ -85,7 +90,7 @@ const NAV_ITEMS = [
 ]
 export default function App() {
   const [activeId, setActiveId] = useState(null)
-  const telemetry = MOCK_TELEMETRY
+  const telemetry = useTelemetry(socket)
  
   const handleNodeFocus = useCallback((id) => {
     setActiveId((prev) => (prev === id ? null : id))
