@@ -1,62 +1,16 @@
+import 'dotenv/config' // <-- This special import forces the .env to load first
+
 import { createServer }  from 'http'
 import express           from 'express'
 import { Server }        from 'socket.io'
+
+import authRoutes from './routes/auth.js'
 import { registerSocketHandlers } from './socket.js'
 import { startEngine }   from './engine.js'
+import { connectDB, disconnectDB } from './config/db.js'
+
 const PORT             = process.env.PORT ?? 4000
 const CLIENT_ORIGIN    = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173'
-const app = express()
-app.use(express.json())
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', ts: Date.now(), uptime: process.uptime() })
-})
-app.get('/api/servers', (_req, res) => {
-  res.json({ servers: SERVER_TOPOLOGY })
-})
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' })
-})
-const httpServer = createServer(app)
-
-const io = new Server(httpServer, {
-  cors: {
-    origin:  CLIENT_ORIGIN,
-    methods: ['GET', 'POST'],
-  },
-  transports:           ['websocket'],
-  pingTimeout:          10_000,
-  pingInterval:         5_000,
-  // Prevent memory leaks from never-completing handshakes
-  connectTimeout:       8_000,
-})
-registerSocketHandlers(io)
-let stopEngine = () => {}
-
-httpServer.listen(PORT, async () => {
-  console.log('┌─────────────────────────────────────────┐')
-  console.log('│  Specter APM backend                    │')
-  console.log(`│  HTTP  →  http://localhost:${PORT}         │`)
-  console.log(`│  WS    →  ws://localhost:${PORT}           │`)
-  console.log(`│  CORS  →  ${CLIENT_ORIGIN}  │`)
-  console.log('└─────────────────────────────────────────┘')
-
-  stopEngine = await startEngine(io)
-})
-
-const shutdown = (signal) => {
-  console.log(`\n[Specter] ${signal} received — shutting down gracefully…`)
-  stopEngine()
-  io.close(() => {
-    httpServer.close(() => {
-      console.log('[Specter] HTTP server closed.  Bye.')
-      process.exit(0)
-    })
-  })
-  setTimeout(() => process.exit(1), 5_000).unref()
-}
-
-process.on('SIGTERM', () => shutdown('SIGTERM'))
-process.on('SIGINT',  () => shutdown('SIGINT'))
 
 const SERVER_TOPOLOGY = [
   {
@@ -114,3 +68,73 @@ const SERVER_TOPOLOGY = [
     topology: { x: 0.24, y: 0.30 },
   },
 ]
+
+const app = express()
+app.use(express.json())
+app.use('/api/auth', authRoutes)
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', ts: Date.now(), uptime: process.uptime() })
+})
+
+app.get('/api/servers', (_req, res) => {
+  res.json({ servers: SERVER_TOPOLOGY })
+})
+
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Not found' })
+})
+
+const httpServer = createServer(app)
+
+const io = new Server(httpServer, {
+  cors: {
+    origin:  CLIENT_ORIGIN,
+    methods: ['GET', 'POST'],
+  },
+  transports:           ['websocket'],
+  pingTimeout:          10_000,
+  pingInterval:         5_000,
+  connectTimeout:       8_000,
+})
+
+registerSocketHandlers(io)
+let stopEngine = () => {}
+
+const startServer = async () => {
+  try {
+    await connectDB()
+
+    httpServer.listen(PORT, async () => {
+      console.log('┌─────────────────────────────────────────┐')
+      console.log('│  Specter APM backend                    │')
+      console.log(`│  HTTP  →  http://localhost:${PORT}         │`)
+      console.log(`│  WS    →  ws://localhost:${PORT}           │`)
+      console.log(`│  CORS  →  ${CLIENT_ORIGIN}  │`)
+      console.log('└─────────────────────────────────────────┘')
+
+      stopEngine = await startEngine(io)
+    })
+  } catch (error) {
+    console.error('[server] ❌ Critical startup failure:', error.message)
+    process.exit(1)
+  }
+}
+
+const shutdown = async (signal) => {
+  console.log(`\n[Specter] ${signal} received — shutting down gracefully…`)
+  stopEngine()
+  await disconnectDB()
+  
+  io.close(() => {
+    httpServer.close(() => {
+      console.log('[Specter] HTTP server closed.  Bye.')
+      process.exit(0)
+    })
+  })
+  setTimeout(() => process.exit(1), 5_000).unref()
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT',  () => shutdown('SIGINT'))
+
+startServer()
