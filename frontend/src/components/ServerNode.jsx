@@ -77,7 +77,14 @@ function TagChip({ tag }) {
 }
 
 export default function ServerNode({ server, metrics, isActive, onFocus }) {
-  const status   = STATUS[server.status] ?? STATUS.offline
+  // Dynamically calculate status based on live CPU usage
+  const liveCpu = metrics?.cpu;
+  const currentStatusKey = liveCpu !== undefined
+    ? (liveCpu >= 90 ? 'critical' : liveCpu >= 70 ? 'warning' : 'operational')
+    : (server.status || 'offline');
+
+  const status = STATUS[currentStatusKey] ?? STATUS.offline;
+
   const cardRef  = useRef(null)
   const glareRef = useRef(null)
   const tiltRef  = useRef({ x: 0, y: 0 })       // current rendered tilt
