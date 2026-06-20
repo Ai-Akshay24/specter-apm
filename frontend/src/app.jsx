@@ -265,8 +265,8 @@ export default function App() {
                 key={server.id ?? server.serverId}
                 style={{
                   ...styles.nodeWrapper,
-                  left:      `${x * 100}%`,
-                  top:       `${y * 100}%`,
+                  left:      `clamp(180px, ${x * 100}%, calc(100% - 180px))`,
+                  top:       `clamp(140px, ${y * 100}%, calc(100% - 140px))`,
                   transform: 'translate(-50%, -50%)',
                 }}
               >
