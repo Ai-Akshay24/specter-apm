@@ -61,15 +61,10 @@ const UserSchema = new Schema(
 )
 UserSchema.index({ orgId: 1, role: 1 })
 
-UserSchema.pre('save', async function hashPasswordIfModified(next) {
-  if (!this.isModified('passwordHash')) return next()
-  try {
-    this.passwordHash = await bcrypt.hash(this.passwordHash, SALT_ROUNDS)
-    next()
-  } catch (err) {
-    next(err)
-  }
-})
+UserSchema.pre('save', async function () {
+  if (!this.isModified('passwordHash')) return;
+  this.passwordHash = await bcrypt.hash(this.passwordHash, SALT_ROUNDS);
+});
 
 UserSchema.methods.comparePassword = function comparePassword(candidate) {
   return bcrypt.compare(candidate, this.passwordHash)

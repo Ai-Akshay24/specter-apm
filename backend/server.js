@@ -1,10 +1,12 @@
-import 'dotenv/config' // <-- This special import forces the .env to load first
+import 'dotenv/config' 
 
 import { createServer }  from 'http'
 import express           from 'express'
 import { Server }        from 'socket.io'
-
+import cors from 'cors'
 import authRoutes from './routes/auth.js'
+import { requireAuth } from './middleware/auth.js'
+import { Server as ServerModel } from './models/Server.js'
 import { registerSocketHandlers } from './socket.js'
 import { startEngine }   from './engine.js'
 import { connectDB, disconnectDB } from './config/db.js'
@@ -70,8 +72,18 @@ const SERVER_TOPOLOGY = [
 ]
 
 const app = express()
+app.use(cors({ origin: CLIENT_ORIGIN }))
 app.use(express.json())
 app.use('/api/auth', authRoutes)
+app.get('/api/servers', requireAuth, async (req, res) => {
+  try {
+    // Fetch only the servers belonging to the logged-in user's organization
+    const servers = await ServerModel.find({ orgId: req.auth.orgId })
+    res.json({ servers })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch servers' })
+  }
+})
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', ts: Date.now(), uptime: process.uptime() })
 })
